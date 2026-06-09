@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Protractor's Predicament</title>
+    <style>
+        :root {
+            --bg-color: #f0f4f8;
+            --primary: #4a90e2;
+            --secondary: #2c3e50;
+            --correct: #2ecc71;
+            --incorrect: #e74c3c;
+            --text-light: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--secondary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #game-container {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 100%;
+            padding: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--primary);
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-style: italic;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        #stats {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #ecf0f1;
+            border-radius: 8px;
+        }
+
+        #question-box {
+            font-size: 1.2rem;
+            margin-bottom: 25px;
+            line-height: 1.5;
+            min-height: 60px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        @media (min-width: 480px) {
+            .options-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .option-btn {
+            background-color: var(--bg-color);
+            border: 2px solid var(--primary);
+            color: var(--secondary);
+            padding: 15px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background-color: var(--primary);
+            color: var(--text-light);
+            transform: translateY(-2px);
+        }
+
+        .option-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        .correct {
+            background-color: var(--correct) !important;
+            border-color: var(--correct) !important;
+            color: white !important;
+            animation: pop 0.3s ease;
+        }
+
+        .incorrect {
+            background-color: var(--incorrect) !important;
+            border-color: var(--incorrect) !important;
+            color: white !important;
+            animation: shake 0.4s ease;
+        }
+
+        #feedback {
+            min-height: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+
+        #next-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            display: none;
+            margin: 0 auto;
+            transition: background-color 0.2s;
+        }
+
+        #next-btn:hover {
+            background-color: #357abd;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+        }
+
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <h1>📐 The Protractor's Predicament</h1>
+        <div class="subtitle">A Shape-Shifting Mystery for Grade 6 Geometers</div>
+        
+        <div id="stats">
+            <span>Puzzle: <span id="question-number">1</span>/5</span>
+            <span>Geometry Points: <span id="score">0</span></span>
+        </div>
+
+        <div id="question-box">Loading question...</div>
+        
+        <div class="options-grid" id="options">
+            </div>
+
+        <div id="feedback"></div>
+        <button id="next-btn">Next Clue ➔</button>
+    </div>
+
+    <script>
+        const puzzleData = [
+            {
+                question: "I am an angle that is smaller than 90°. People often tell me I'm very 'adorable'. What kind of angle am I?",
+                options: ["Right Angle", "Obtuse Angle", "Acute Angle", "Straight Angle"],
+                answer: "Acute Angle",
+                funFact: "Spot on! Remember, 'a-cute' little angle is always less than 90 degrees."
+            },
+            {
+                question: "We are two straight lines hanging out together. No matter how far we travel, we will NEVER cross paths or meet. What are we?",
+                options: ["Perpendicular Lines", "Parallel Lines", "Intersecting Lines", "Diagonal Lines"],
+                answer: "Parallel Lines",
+                funFact: "Correct! Think of us like the two 'L's in the word paraLLel."
+            },
+            {
+                question: "I am a polygon with exactly 5 sides. You might also recognize my name as a famous building in Washington D.C. What am I?",
+                options: ["Hexagon", "Octagon", "Pentagon", "Quadrilateral"],
+                answer: "Pentagon",
+                funFact: "Awesome! 'Penta' means five in Greek."
+            },
+            {
+                question: "I am a perfectly upright angle, measuring exactly 90°. I form the corner of a perfect square. What am I?",
+                options: ["Right Angle", "Straight Angle", "Obtuse Angle", "Acute Angle"],
+                answer: "Right Angle",
+                funFact: "You're RIGHT! You can usually spot me by the little square box drawn in my corner."
+            },
+            {
+                question: "I am a special type of triangle where all three of my sides are the exact same length. I like everything to be fair! Who am I?",
+                options: ["Isosceles Triangle", "Scalene Triangle", "Right Triangle", "Equilateral Triangle"],
+                answer: "Equilateral Triangle",
+                funFact: "Brilliant! 'Equi' means equal, and 'lateral' means sides!"
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+
+        const questionBox = document.getElementById("question-box");
+        const optionsGrid = document.getElementById("options");
+        const feedbackDisplay = document.getElementById("feedback");
+        const nextBtn = document.getElementById("next-btn");
+        const scoreDisplay = document.getElementById("score");
+        const questionNumberDisplay = document.getElementById("question-number");
+
+        function loadQuestion() {
+            // Reset UI
+            feedbackDisplay.textContent = "";
+            nextBtn.style.display = "none";
+            optionsGrid.innerHTML = "";
+            
+            const q = puzzleData[currentQuestion];
+            questionBox.textContent = q.question;
+            questionNumberDisplay.textContent = currentQuestion + 1;
+
+            // Create buttons
+            q.options.forEach(option => {
+                const button = document.createElement("button");
+                button.textContent = option;
+                button.classList.add("option-btn");
+                button.onclick = () => checkAnswer(button, option, q);
+                optionsGrid.appendChild(button);
+            });
+        }
+
+        function checkAnswer(selectedButton, selectedAnswer, questionData) {
+            // Disable all buttons after a choice is made
+            const allButtons = document.querySelectorAll('.option-btn');
+            allButtons.forEach(btn => btn.disabled = true);
+
+            if (selectedAnswer === questionData.answer) {
+                selectedButton.classList.add("correct");
+                score += 20; // 20 points per correct answer (100 total)
+                scoreDisplay.textContent = score;
+                feedbackDisplay.style.color = "var(--correct)";
+                feedbackDisplay.textContent = "✓ " + questionData.funFact;
+            } else {
+                selectedButton.classList.add("incorrect");
+                feedbackDisplay.style.color = "var(--incorrect)";
+                feedbackDisplay.textContent = "✗ Oops! The correct shape was: " + questionData.answer + ".";
+                
+                // Highlight the correct answer
+                allButtons.forEach(btn => {
+                    if (btn.textContent === questionData.answer) {
+                        btn.style.backgroundColor = "var(--correct)";
+                        btn.style.color = "white";
+                    }
+                });
+            }
+
+            nextBtn.style.display = "block";
+        }
+
+        nextBtn.onclick = () => {
+            currentQuestion++;
+            if (currentQuestion < puzzleData.length) {
+                loadQuestion();
+            } else {
+                showFinalScore();
+            }
+        };
+
+        function showFinalScore() {
+            questionBox.innerHTML = `<strong>Puzzle Complete! 🎉</strong><br><br>You scored ${score} out of 100 points!`;
+            optionsGrid.innerHTML = "";
+            feedbackDisplay.textContent = "";
+            nextBtn.style.display = "none";
+            
+            let message = "";
+            if(score === 100) message = "Perfect score! You're a Geometry Genius!";
+            else if(score >= 60) message = "Great job! You really know your shapes.";
+            else message = "Good try! Time to brush up on those angles.";
+
+            feedbackDisplay.style.color = "var(--primary)";
+            feedbackDisplay.textContent = message;
+
+            // Add a restart button
+            const restartBtn = document.createElement("button");
+            restartBtn.textContent = "Play Again ↻";
+            restartBtn.id = "next-btn"; // reuse styles
+            restartBtn.style.display = "block";
+            restartBtn.onclick = () => {
+                currentQuestion = 0;
+                score = 0;
+                scoreDisplay.textContent = score;
+                loadQuestion();
+            };
+            optionsGrid.appendChild(restartBtn);
+        }
+
+        // Start the game
+        loadQuestion();
+    </script>
+</body>
+</html>
